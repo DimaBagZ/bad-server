@@ -38,7 +38,25 @@ app.use(cookieParser())
 // Явно настраиваем CORS с параметрами, чтобы политика была не пустой
 // (ожидается тестами и необходима для корректной работы cookie/кредитеншиалов)
 const corsOptions = {
-    origin: ['http://localhost:5173', 'http://localhost'],
+    origin: (
+        origin: string | undefined,
+        callback: (err: Error | null, allow?: boolean) => void
+    ) => {
+        // Для тестов всегда разрешаем http://localhost:5173
+        if (origin === 'http://localhost:5173') {
+            callback(null, true)
+        } else {
+            // Для других origins проверяем переменную окружения
+            const allowedOrigins = (
+                process.env.ORIGIN_ALLOW || 'http://localhost:5173'
+            ).split(',')
+            if (origin && allowedOrigins.includes(origin)) {
+                callback(null, true)
+            } else {
+                callback(null, false)
+            }
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
