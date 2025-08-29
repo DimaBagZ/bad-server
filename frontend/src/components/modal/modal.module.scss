@@ -3,8 +3,10 @@
     height: max-content;
     display: none;
     justify-content: center;
+    align-items: flex-start; // показываем контейнер в видимой области экрана сверху
     z-index: 100;
-    padding-top: 5vh;
+    // Управляем отступами через контейнер, сверху фиксируем относительный зазор
+    padding-top: 0;
     padding-bottom: 5vh;
     &_active {
         display: flex;
@@ -28,6 +30,12 @@
         border-radius: 3rem;
         box-sizing: border-box;
         position: relative;
+        // Адаптивная максимальная ширина модального окна
+        width: min(100%, 1200px);
+        margin-left: clamp(16px, 15vw, 300px);
+        margin-right: clamp(16px, 15vw, 300px);
+        // Отступ сверху адаптивный относительно ширины экрана: при 1920px ≈ 212px
+        margin-top: clamp(16px, 11vw, 212px);
     }
 
     &__content {

@@ -8,6 +8,7 @@ import BadRequestError from '../errors/bad-request-error'
 import ConflictError from '../errors/conflict-error'
 import NotFoundError from '../errors/not-found-error'
 import UnauthorizedError from '../errors/unauthorized-error'
+import bcrypt from 'bcryptjs'
 import User from '../models/user'
 
 // POST /auth/login
@@ -206,6 +207,53 @@ const updateCurrentUser = async (
     }
 }
 
+// PATCH /auth/password — смена пароля текущего пользователя
+const changePassword = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    const userId = res.locals.user._id
+    try {
+        const { currentPassword, newPassword, confirmPassword } = req.body as {
+            currentPassword: string
+            newPassword: string
+            confirmPassword: string
+        }
+
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            return next(new BadRequestError('Все поля обязательны'))
+        }
+        if (newPassword !== confirmPassword) {
+            return next(new BadRequestError('Пароли не совпадают'))
+        }
+        if (newPassword.length < 6) {
+            return next(
+                new BadRequestError('Минимальная длина пароля 6 символов')
+            )
+        }
+
+        const user = await User.findById(userId)
+            .select('+password')
+            .orFail(() => new NotFoundError('Пользователь не найден'))
+
+        const isMatch = await bcrypt.compare(currentPassword, user.password)
+        if (!isMatch) {
+            return next(new UnauthorizedError('Текущий пароль неверен'))
+        }
+
+        user.password = newPassword
+        await user.save()
+
+        return res.json({ success: true })
+    } catch (error) {
+        if (error instanceof MongooseError.ValidationError) {
+            return next(new BadRequestError(error.message))
+        }
+        return next(error)
+    }
+}
+
 export {
     getCurrentUser,
     getCurrentUserRoles,
@@ -214,4 +262,5 @@ export {
     refreshAccessToken,
     register,
     updateCurrentUser,
+    changePassword,
 }

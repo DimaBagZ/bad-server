@@ -50,7 +50,7 @@ cardsSchema.index({ title: 'text' })
 
 // Можно лучше: удалять старое изображением перед обновлением сущности
 cardsSchema.pre('findOneAndUpdate', async function deleteOldImage() {
-    // @ts-ignore
+    // @ts-expect-error - Mongoose types don't properly type this.getUpdate()
     const updateImage = this.getUpdate().$set?.image
     const docToUpdate = await this.model.findOne(this.getQuery())
     if (updateImage && docToUpdate) {
@@ -68,4 +68,6 @@ cardsSchema.post('findOneAndDelete', async (doc: IProduct) => {
     )
 })
 
-export default mongoose.model<IProduct>('product', cardsSchema)
+const ProductModel = mongoose.model<IProduct>('products', cardsSchema)
+console.log('Product model collection name:', ProductModel.collection.name)
+export default ProductModel

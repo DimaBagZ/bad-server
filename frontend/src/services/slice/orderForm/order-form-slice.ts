@@ -42,6 +42,8 @@ export const orderFormSlice = createSlice({
             })
             .addCase(createOrder.fulfilled, (state) => {
                 state.status = RequestStatus.Success
+                // Очищаем корзину после успешного создания заказа
+                // Это будет обработано в компоненте через resetBasket
             })
             .addCase(createOrder.rejected, (state) => {
                 state.status = RequestStatus.Failed

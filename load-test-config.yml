@@ -1,0 +1,54 @@
+config:
+  target: "http://localhost"
+  phases:
+    - duration: 60
+      arrivalRate: 100
+      name: "Плавное увеличение нагрузки"
+    - duration: 120
+      arrivalRate: 500
+      name: "Высокая нагрузка"
+    - duration: 60
+      arrivalRate: 1000
+      name: "Пиковая нагрузка"
+  defaults:
+    headers:
+      User-Agent: "Artillery Load Test"
+      Accept: "application/json, text/html"
+      Connection: "keep-alive"
+
+scenarios:
+  - name: "Тест главной страницы"
+    weight: 40
+    flow:
+      - get:
+          url: "/"
+          expect:
+            - statusCode: 200
+      - think: 1
+
+  - name: "Тест API продуктов"
+    weight: 30
+    flow:
+      - get:
+          url: "/api/product"
+          expect:
+            - statusCode: 200
+      - think: 2
+
+  - name: "Тест страницы логина"
+    weight: 20
+    flow:
+      - get:
+          url: "/login"
+          expect:
+            - statusCode: 200
+      - think: 1
+
+  - name: "Тест корзины"
+    weight: 10
+    flow:
+      - get:
+          url: "/basket"
+          expect:
+            - statusCode: 200
+      - think: 1

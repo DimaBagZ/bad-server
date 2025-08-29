@@ -1,0 +1,45 @@
+config:
+  target: "http://localhost"
+  phases:
+    - duration: 30
+      arrivalRate: 2000
+      name: "DDOS атака - высокая нагрузка"
+    - duration: 60
+      arrivalRate: 5000
+      name: "DDOS атака - экстремальная нагрузка"
+  defaults:
+    headers:
+      User-Agent: "DDOS Test Bot"
+      Accept: "*/*"
+      Connection: "close"
+
+scenarios:
+  - name: "Бомбардировка главной страницы"
+    weight: 50
+    flow:
+      - get:
+          url: "/"
+      - get:
+          url: "/"
+      - get:
+          url: "/"
+
+  - name: "Бомбардировка API"
+    weight: 30
+    flow:
+      - get:
+          url: "/api/product"
+      - get:
+          url: "/api/product"
+      - get:
+          url: "/api/product"
+
+  - name: "Бомбардировка статических файлов"
+    weight: 20
+    flow:
+      - get:
+          url: "/logo.svg"
+      - get:
+          url: "/favicon.ico"
+      - get:
+          url: "/"

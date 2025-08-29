@@ -5,7 +5,6 @@ import TableRow from '@components/table/table-row'
 import { OrderDataList } from '@slices/orders/type'
 import { profileOrdersSelector } from '@slices/profile-orders'
 import { fetchOrdersMeWithFilters } from '@slices/profile-orders/thunk'
-import { useDispatch } from '@store/hooks'
 import clsx from 'clsx'
 import { ChangeEvent, FormEvent, useCallback, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
@@ -15,7 +14,6 @@ import usePagination from '../pagination/helpers/usePagination'
 import styles from './profile.module.scss'
 
 export default function ProfileOrders() {
-    const dispatch = useDispatch()
     const location = useLocation()
     // const orders = useSelector(profileOrdersSelector.selectProfileOrders);
     const [searchParams, setSearchParams] = useSearchParams()
@@ -99,7 +97,7 @@ export default function ProfileOrders() {
             })
             setSearchParams({ ...filters, search: value })
         },
-        [searchParams, dispatch, setSearchParams]
+        [searchParams, setSearchParams]
     )
 
     return (
@@ -111,6 +109,14 @@ export default function ProfileOrders() {
         >
             <div className={styles.profile__headerTitle}>
                 <h1 className={styles.profile__title}>Мои заказы</h1>
+                {/* Кнопка смены : открываем модал с роутом /profile/password */}
+                <Link
+                    to={'/profile/password'}
+                    state={{ background: location }}
+                    className={styles.profile__changePassword}
+                >
+                    <Button type='button'>Сменить пароль</Button>
+                </Link>
             </div>
             <form
                 className={styles.profile__formSearch}

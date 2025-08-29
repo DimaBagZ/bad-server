@@ -1,8 +1,9 @@
 import { Joi, celebrate } from 'celebrate'
 import { Types } from 'mongoose'
 
-// eslint-disable-next-line no-useless-escape
-export const phoneRegExp = /^(\+\d+)?(?:\s|-?|\(?\d+\)?)+$/
+// Безопасное регулярное выражение для телефона (защита от ReDoS)
+// Увеличили верхнюю границу до 20, чтобы поддержать распространённые форматы с пробелами/скобками/дефисами
+export const phoneRegExp = /^(\+\d{1,3})?[\s\-()\d]{7,20}$/
 
 export enum PaymentType {
     Card = 'card',
@@ -130,6 +131,24 @@ export const validateAuthentication = celebrate({
             }),
         password: Joi.string().required().messages({
             'string.empty': 'Поле "password" должно быть заполнено',
+        }),
+    }),
+})
+
+export const validateChangePasswordBody = celebrate({
+    body: Joi.object().keys({
+        currentPassword: Joi.string().required().messages({
+            'string.empty': 'Поле "currentPassword" должно быть заполнено',
+            'any.required': 'Поле "currentPassword" обязательно',
+        }),
+        newPassword: Joi.string().min(6).required().messages({
+            'string.empty': 'Поле "newPassword" должно быть заполнено',
+            'string.min': 'Минимальная длина поля "newPassword" - 6',
+            'any.required': 'Поле "newPassword" обязательно',
+        }),
+        confirmPassword: Joi.string().required().messages({
+            'string.empty': 'Поле "confirmPassword" должно быть заполнено',
+            'any.required': 'Поле "confirmPassword" обязательно',
         }),
     }),
 })
