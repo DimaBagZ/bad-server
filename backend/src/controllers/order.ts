@@ -125,9 +125,40 @@ export const getOrders = async (
             queryParams.includes('{') ||
             queryParams.includes('}') ||
             queryParams.includes('javascript:') ||
-            queryParams.includes('eval(')
+            queryParams.includes('eval(') ||
+            queryParams.includes('$where') ||
+            queryParams.includes('$function') ||
+            queryParams.includes('$accumulator')
         ) {
-            return res.status(400).json({ error: 'Suspicious query parameters detected' })
+            return res
+                .status(400)
+                .json({ error: 'Suspicious query parameters detected' })
+        }
+
+        // Дополнительная проверка на NoSQL инъекции
+        const queryString = JSON.stringify(req.query)
+        if (
+            queryString.includes('$ne') ||
+            queryString.includes('$gt') ||
+            queryString.includes('$lt') ||
+            queryString.includes('$regex') ||
+            queryString.includes('$options')
+        ) {
+            return res
+                .status(400)
+                .json({ error: 'NoSQL injection attempt detected' })
+        }
+
+        // Проверка на попытки инъекции в фильтры
+        const filtersString = JSON.stringify(filters)
+        if (
+            filtersString.includes('$where') ||
+            filtersString.includes('$function') ||
+            filtersString.includes('$accumulator')
+        ) {
+            return res
+                .status(400)
+                .json({ error: 'Dangerous filter operators detected' })
         }
 
         if (search) {

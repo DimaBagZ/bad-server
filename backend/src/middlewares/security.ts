@@ -12,7 +12,10 @@ export const pathTraversalProtection = (
     const requestedPath = req.path
 
     // Пропускаем проверку для API загрузки файлов
-    if (requestedPath === '/api/upload') {
+    if (
+        requestedPath === '/api/upload' ||
+        requestedPath.startsWith('/api/upload')
+    ) {
         return next()
     }
 
