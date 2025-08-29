@@ -38,7 +38,8 @@ const orderSchema: Schema = new Schema(
         products: [
             {
                 type: Types.ObjectId,
-                ref: 'product',
+                // Исправляем ref на корректное имя модели продуктов
+                ref: 'products',
             },
         ],
         payment: {
@@ -73,6 +74,7 @@ const orderSchema: Schema = new Schema(
 )
 
 orderSchema.pre('save', async function incrementOrderNumber(next) {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const order = this
 
     if (order.isNew) {

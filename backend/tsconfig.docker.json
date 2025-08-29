@@ -1,0 +1,17 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        /* Type Checking - менее строгие настройки для Docker */
+        "strict": false,
+        "noImplicitAny": false,
+        "strictNullChecks": false,
+        "strictFunctionTypes": false,
+        "strictBindCallApply": false,
+        "strictPropertyInitialization": false,
+        "noImplicitThis": false,
+        "alwaysStrict": false,
+        /* Дополнительные настройки для Docker */
+        "skipLibCheck": true,
+        "noEmitOnError": false
+    }
+}

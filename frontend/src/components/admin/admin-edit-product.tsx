@@ -71,7 +71,7 @@ export default function AdminEditProduct() {
                 title: currentProduct.title,
             })
         }
-    }, [currentProduct])
+    }, [currentProduct, setValuesForm])
 
     const handleUpdateProduct = async () => {
         if (!selectedCategory) {
@@ -80,7 +80,12 @@ export default function AdminEditProduct() {
         const dataProduct = {
             ...values,
             category: selectedCategory?.title as keyof typeof CATEGORY_CLASSES,
-            image: selectedFile ? selectedFile : undefined,
+            image: selectedFile
+                ? {
+                      fileName: selectedFile.fileName,
+                      originalName: selectedFile.originalName,
+                  }
+                : undefined,
             price: values.price ? values.price : null,
         }
 

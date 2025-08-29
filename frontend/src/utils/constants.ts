@@ -1,7 +1,7 @@
 import styles from '@components/card/card.module.scss'
 
 export const API_URL = `${import.meta.env.VITE_API_ORIGIN}`
-export const CDN_URL = `${import.meta.env.VITE_API_ORIGIN}`
+export const CDN_URL = `${import.meta.env.VITE_CDN_ORIGIN}`
 
 export type OptionType = {
     title: string

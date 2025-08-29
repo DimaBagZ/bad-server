@@ -37,8 +37,13 @@
 
     &__headerTitle {
         display: flex;
-        align-items: baseline;
+        align-items: center;
         gap: $baseFontSize;
+        justify-content: space-between; // кнопка справа 
+    }
+
+    &__changePassword {
+        text-decoration: none;
     }
 
     &__tableRow {

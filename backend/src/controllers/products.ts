@@ -7,17 +7,30 @@ import ConflictError from '../errors/conflict-error'
 import NotFoundError from '../errors/not-found-error'
 import Product from '../models/product'
 import movingFile from '../utils/movingFile'
+import { UPLOAD_CONFIG } from '../config'
 
 // GET /product
 const getProducts = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        console.log('getProducts called')
         const { page = 1, limit = 5 } = req.query
         const options = {
             skip: (Number(page) - 1) * Number(limit),
             limit: Number(limit),
         }
+        console.log('Querying products with options:', options)
+
+        // Прямой запрос к базе данных
+        const db = Product.db
+        console.log('Database name:', db.name)
+        const collection = db.collection('products')
+        const directCount = await collection.countDocuments({})
+        console.log('Direct collection count:', directCount)
+
         const products = await Product.find({}, null, options)
+        console.log('Found products:', products.length)
         const totalProducts = await Product.countDocuments({})
+        console.log('Total products:', totalProducts)
         const totalPages = Math.ceil(totalProducts / Number(limit))
         return res.send({
             items: products,
@@ -29,6 +42,7 @@ const getProducts = async (req: Request, res: Response, next: NextFunction) => {
             },
         })
     } catch (err) {
+        console.error('Error in getProducts:', err)
         return next(err)
     }
 }
@@ -43,11 +57,11 @@ const createProduct = async (
         const { description, category, price, title, image } = req.body
 
         // Переносим картинку из временной папки
-        if (image) {
+        if (image && image.fileName) {
             movingFile(
                 image.fileName,
-                join(__dirname, `../public/${process.env.UPLOAD_PATH_TEMP}`),
-                join(__dirname, `../public/${process.env.UPLOAD_PATH}`)
+                join(__dirname, `../public/${UPLOAD_CONFIG.tempPath}`),
+                join(__dirname, `../public/${UPLOAD_CONFIG.path}`)
             )
         }
 
@@ -84,11 +98,11 @@ const updateProduct = async (
         const { image } = req.body
 
         // Переносим картинку из временной папки
-        if (image) {
+        if (image && image.fileName) {
             movingFile(
                 image.fileName,
-                join(__dirname, `../public/${process.env.UPLOAD_PATH_TEMP}`),
-                join(__dirname, `../public/${process.env.UPLOAD_PATH}`)
+                join(__dirname, `../public/${UPLOAD_CONFIG.tempPath}`),
+                join(__dirname, `../public/${UPLOAD_CONFIG.path}`)
             )
         }
 

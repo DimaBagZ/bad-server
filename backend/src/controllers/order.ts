@@ -1,10 +1,15 @@
-import { NextFunction, Request, Response } from 'express'
-import { FilterQuery, Error as MongooseError, Types } from 'mongoose'
-import BadRequestError from '../errors/bad-request-error'
-import NotFoundError from '../errors/not-found-error'
-import Order, { IOrder } from '../models/order'
+import { Request, Response, NextFunction } from 'express'
+import { Types, PipelineStage, Error as MongooseError } from 'mongoose'
+import Order, { IOrder, StatusType } from '../models/order'
 import Product, { IProduct } from '../models/product'
 import User from '../models/user'
+import BadRequestError from '../errors/bad-request-error'
+import NotFoundError from '../errors/not-found-error'
+import escapeRegExp from '../utils/escapeRegExp'
+
+interface SearchCondition {
+    [key: string]: RegExp | number
+}
 
 // eslint-disable-next-line max-len
 // GET /orders?page=2&limit=5&sort=totalAmount&order=desc&orderDateFrom=2024-07-01&orderDateTo=2024-08-01&status=delivering&totalAmountFrom=100&totalAmountTo=1000&search=%2B1
@@ -28,46 +33,52 @@ export const getOrders = async (
             search,
         } = req.query
 
-        const filters: FilterQuery<Partial<IOrder>> = {}
+        const filters: Record<string, unknown> = {}
 
-        if (status) {
-            if (typeof status === 'object') {
-                Object.assign(filters, status)
-            }
-            if (typeof status === 'string') {
+        if (status && typeof status === 'string') {
+            // Принимаем только значения из enum статусов
+            if ((Object.values(StatusType) as string[]).includes(status)) {
                 filters.status = status
             }
         }
 
         if (totalAmountFrom) {
+            const existingTotalAmount =
+                (filters.totalAmount as Record<string, unknown>) || {}
             filters.totalAmount = {
-                ...filters.totalAmount,
+                ...existingTotalAmount,
                 $gte: Number(totalAmountFrom),
             }
         }
 
         if (totalAmountTo) {
+            const existingTotalAmount =
+                (filters.totalAmount as Record<string, unknown>) || {}
             filters.totalAmount = {
-                ...filters.totalAmount,
+                ...existingTotalAmount,
                 $lte: Number(totalAmountTo),
             }
         }
 
         if (orderDateFrom) {
+            const existingCreatedAt =
+                (filters.createdAt as Record<string, unknown>) || {}
             filters.createdAt = {
-                ...filters.createdAt,
+                ...existingCreatedAt,
                 $gte: new Date(orderDateFrom as string),
             }
         }
 
         if (orderDateTo) {
+            const existingCreatedAt =
+                (filters.createdAt as Record<string, unknown>) || {}
             filters.createdAt = {
-                ...filters.createdAt,
+                ...existingCreatedAt,
                 $lte: new Date(orderDateTo as string),
             }
         }
 
-        const aggregatePipeline: any[] = [
+        const aggregatePipeline: PipelineStage[] = [
             { $match: filters },
             {
                 $lookup: {
@@ -89,11 +100,80 @@ export const getOrders = async (
             { $unwind: '$products' },
         ]
 
+        // Проверка на избыточную агрегацию (защита от инъекции)
+        if (aggregatePipeline.length > 5) {
+            return res.status(400).json({ error: 'Aggregation too complex' })
+        }
+
+        // Дополнительная проверка на сложные операторы
+        const pipelineString = JSON.stringify(aggregatePipeline)
+        if (
+            pipelineString.includes('$where') ||
+            pipelineString.includes('$eval') ||
+            pipelineString.includes('$function') ||
+            pipelineString.includes('$accumulator')
+        ) {
+            return res
+                .status(400)
+                .json({ error: 'Dangerous aggregation operators detected' })
+        }
+
+        // Проверка на попытки инъекции через параметры запроса
+        const queryParams = Object.values(req.query).join(' ')
+        if (
+            queryParams.includes('$') ||
+            queryParams.includes('{') ||
+            queryParams.includes('}') ||
+            queryParams.includes('javascript:') ||
+            queryParams.includes('eval(') ||
+            queryParams.includes('$where') ||
+            queryParams.includes('$function') ||
+            queryParams.includes('$accumulator') ||
+            queryParams.includes('$expr')
+        ) {
+            return res
+                .status(400)
+                .json({ error: 'Suspicious query parameters detected' })
+        }
+
+        // Дополнительная проверка на NoSQL инъекции
+        const queryString = JSON.stringify(req.query)
+        if (
+            queryString.includes('$ne') ||
+            queryString.includes('$gt') ||
+            queryString.includes('$lt') ||
+            queryString.includes('$regex') ||
+            queryString.includes('$options') ||
+            queryString.includes('$expr') ||
+            queryString.includes('$function')
+        ) {
+            return res
+                .status(400)
+                .json({ error: 'NoSQL injection attempt detected' })
+        }
+
+        // Проверка на попытки инъекции в фильтры
+        const filtersString = JSON.stringify(filters)
+        if (
+            filtersString.includes('$where') ||
+            filtersString.includes('$function') ||
+            filtersString.includes('$accumulator') ||
+            filtersString.includes('$expr')
+        ) {
+            return res
+                .status(400)
+                .json({ error: 'Dangerous filter operators detected' })
+        }
+
         if (search) {
-            const searchRegex = new RegExp(search as string, 'i')
+            // Экранируем строку поиска, чтобы избежать ошибок regexp и ReDoS
+            const safe = escapeRegExp(String(search))
+            const searchRegex = new RegExp(safe, 'i')
             const searchNumber = Number(search)
 
-            const searchConditions: any[] = [{ 'products.title': searchRegex }]
+            const searchConditions: SearchCondition[] = [
+                { 'products.title': searchRegex },
+            ]
 
             if (!Number.isNaN(searchNumber)) {
                 searchConditions.push({ orderNumber: searchNumber })
@@ -108,16 +188,23 @@ export const getOrders = async (
             filters.$or = searchConditions
         }
 
-        const sort: { [key: string]: any } = {}
+        const sort: { [key: string]: 1 | -1 } = {}
 
         if (sortField && sortOrder) {
             sort[sortField as string] = sortOrder === 'desc' ? -1 : 1
         }
 
+        // Нормализуем лимит пагинации (1..10)
+        const rawLimit = Number(limit)
+        const safeLimit = Math.max(
+            1,
+            Math.min(10, Number.isFinite(rawLimit) ? rawLimit : 10)
+        )
+
         aggregatePipeline.push(
             { $sort: sort },
-            { $skip: (Number(page) - 1) * Number(limit) },
-            { $limit: Number(limit) },
+            { $skip: (Number(page) - 1) * safeLimit },
+            { $limit: safeLimit },
             {
                 $group: {
                     _id: '$_id',
@@ -133,7 +220,7 @@ export const getOrders = async (
 
         const orders = await Order.aggregate(aggregatePipeline)
         const totalOrders = await Order.countDocuments(filters)
-        const totalPages = Math.ceil(totalOrders / Number(limit))
+        const totalPages = Math.ceil(totalOrders / safeLimit)
 
         res.status(200).json({
             orders,
@@ -141,7 +228,7 @@ export const getOrders = async (
                 totalOrders,
                 totalPages,
                 currentPage: Number(page),
-                pageSize: Number(limit),
+                pageSize: safeLimit,
             },
         })
     } catch (error) {
@@ -185,15 +272,15 @@ export const getOrdersCurrentUser = async (
 
         if (search) {
             // если не экранировать то получаем Invalid regular expression: /+1/i: Nothing to repeat
-            const searchRegex = new RegExp(search as string, 'i')
             const searchNumber = Number(search)
-            const products = await Product.find({ title: searchRegex })
-            const productIds = products.map((product) => product._id)
 
             orders = orders.filter((order) => {
+                const productIds = order.products.map((product) => product._id)
                 // eslint-disable-next-line max-len
                 const matchesProductTitle = order.products.some((product) =>
-                    productIds.some((id) => id.equals(product._id))
+                    productIds.some((id: Types.ObjectId) =>
+                        id.equals(product._id)
+                    )
                 )
                 // eslint-disable-next-line max-len
                 const matchesOrderNumber =
@@ -295,7 +382,12 @@ export const createOrder = async (
             req.body
 
         items.forEach((id: Types.ObjectId) => {
-            const product = products.find((p) => p._id.equals(id))
+            const product = products.find((p) => {
+                if (p._id && typeof p._id === 'object' && 'equals' in p._id) {
+                    return (p._id as Types.ObjectId).equals(id)
+                }
+                return false
+            })
             if (!product) {
                 throw new BadRequestError(`Товар с id ${id} не найден`)
             }

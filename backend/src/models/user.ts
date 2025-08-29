@@ -3,7 +3,7 @@ import crypto from 'crypto'
 import jwt from 'jsonwebtoken'
 import mongoose, { Document, HydratedDocument, Model, Types } from 'mongoose'
 import validator from 'validator'
-import md5 from 'md5'
+import bcrypt from 'bcryptjs'
 
 import { ACCESS_TOKEN, REFRESH_TOKEN } from '../config'
 import UnauthorizedError from '../errors/unauthorized-error'
@@ -34,7 +34,7 @@ interface IUserMethods {
     calculateOrderStats(): Promise<void>
 }
 
-interface IUserModel extends Model<IUser, {}, IUserMethods> {
+interface IUserModel extends Model<IUser, Record<string, never>, IUserMethods> {
     findUserByCredentials: (
         email: string,
         password: string
@@ -105,7 +105,7 @@ const userSchema = new mongoose.Schema<IUser, IUserModel, IUserMethods>(
         // Возможно удаление пароля в контроллере создания, т.к. select: false не работает в случае создания сущности https://mongoosejs.com/docs/api/document.html#Document.prototype.toJSON()
         toJSON: {
             virtuals: true,
-            transform: (_doc, ret) => {
+            transform: (_doc, ret: Record<string, unknown>) => {
                 delete ret.tokens
                 delete ret.password
                 delete ret._id
@@ -120,7 +120,7 @@ const userSchema = new mongoose.Schema<IUser, IUserModel, IUserMethods>(
 userSchema.pre('save', async function hashingPassword(next) {
     try {
         if (this.isModified('password')) {
-            this.password = md5(this.password)
+            this.password = await bcrypt.hash(this.password, 12)
         }
         next()
     } catch (error) {
@@ -131,7 +131,8 @@ userSchema.pre('save', async function hashingPassword(next) {
 // Можно лучше: централизованное создание accessToken и  refresh токена
 
 userSchema.methods.generateAccessToken = function generateAccessToken() {
-    const user = this
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const user = this as IUser & { _id: Types.ObjectId }
     // Создание accessToken токена возможно в контроллере авторизации
     return jwt.sign(
         {
@@ -148,7 +149,8 @@ userSchema.methods.generateAccessToken = function generateAccessToken() {
 
 userSchema.methods.generateRefreshToken =
     async function generateRefreshToken() {
-        const user = this
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
+        const user = this as IUser & { _id: Types.ObjectId }
         // Создание refresh токена возможно в контроллере авторизации/регистрации
         const refreshToken = jwt.sign(
             {
@@ -181,7 +183,7 @@ userSchema.statics.findUserByCredentials = async function findByCredentials(
     const user = await this.findOne({ email })
         .select('+password')
         .orFail(() => new UnauthorizedError('Неправильные почта или пароль'))
-    const passwdMatch = md5(password) === user.password
+    const passwdMatch = await bcrypt.compare(password, user.password)
     if (!passwdMatch) {
         return Promise.reject(
             new UnauthorizedError('Неправильные почта или пароль')
@@ -191,6 +193,7 @@ userSchema.statics.findUserByCredentials = async function findByCredentials(
 }
 
 userSchema.methods.calculateOrderStats = async function calculateOrderStats() {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const user = this
     const orderStats = await mongoose.model('order').aggregate([
         { $match: { customer: user._id } },

@@ -5,6 +5,7 @@ import {
     To,
     useLocation,
     useNavigate,
+    Navigate,
 } from 'react-router-dom'
 import '../../index.scss'
 import styles from './app.module.scss'
@@ -30,6 +31,7 @@ import ProfileOrders from '@components/profile/profile-orders'
 import ProtectedRoute from '@components/protected-route/protected-route'
 import { AppRoute } from '@constants'
 import AdminPage from '@pages/admin'
+import ChangePassword from '@pages/profile/change-password'
 import LoginPage from '@pages/login'
 import LogoutPage from '@pages/logout'
 import MainPage from '@pages/main'
@@ -40,9 +42,9 @@ import { useActionCreators } from '@store/hooks'
 import store, { persistor } from '@store/store'
 import { PropsWithChildren, useEffect } from 'react'
 import { Provider } from 'react-redux'
+import { PersistGate } from 'redux-persist/integration/react'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
-import { PersistGate } from 'redux-persist/integration/react'
 import AdminCustomerDetail from '../admin/admin-customer-detail'
 import ProfileOrderDetail from '../profile/profile-order-detail'
 
@@ -136,10 +138,9 @@ const RouteComponent = () => {
                         </ProtectedRoute>
                     }
                 >
-                    <Route
-                        path={AppRoute.ProfileOrders}
-                        element={<ProfileOrders />}
-                    />
+                    <Route index element={<Navigate to='orders' replace />} />
+                    <Route path={'orders'} element={<ProfileOrders />} />
+                    <Route path={'password'} element={<ChangePassword />} />
                 </Route>
                 <Route path={AppRoute.Basket} element={<Basket />} />
                 <Route
@@ -322,6 +323,14 @@ const RouteComponent = () => {
 
                     <Route path={AppRoute.Profile} element={<ProfilePage />}>
                         <Route
+                            path={AppRoute.ProfilePassword}
+                            element={
+                                <Modal onClose={handleModalClose(-1)}>
+                                    <ChangePassword />
+                                </Modal>
+                            }
+                        />
+                        <Route
                             path={AppRoute.ProfileOrder}
                             element={
                                 <Modal onClose={handleModalClose(-1)}>
@@ -338,15 +347,17 @@ const RouteComponent = () => {
 
 const ProviderComponent = ({ children }: PropsWithChildren) => (
     <Provider store={store}>
-        <PersistGate persistor={persistor}>{children}</PersistGate>
-        <ToastContainer
-            position='top-right'
-            autoClose={5e3}
-            newestOnTop={false}
-            closeOnClick
-            pauseOnFocusLoss
-            pauseOnHover
-            theme='colored'
-        />
+        <PersistGate loading={null} persistor={persistor}>
+            {children}
+            <ToastContainer
+                position='top-right'
+                autoClose={5e3}
+                newestOnTop={false}
+                closeOnClick
+                pauseOnFocusLoss
+                pauseOnHover
+                theme='colored'
+            />
+        </PersistGate>
     </Provider>
 )

@@ -19,15 +19,18 @@ export const basketSlice = createSlice({
                 return state
             } else {
                 state.items.push(payload)
+                state.totalCount = state.items.length
             }
-            state.totalCount++
         },
         removeProductCart: (state, action: PayloadAction<string>) => {
-            state.items = state.items.filter((item) => {
-                return item._id !== action.payload
-            })
+            state.items = state.items.filter(
+                (item) => item._id !== action.payload
+            )
+            state.totalCount = state.items.length
         },
-        resetBasket: () => initialState,
+        resetBasket: () => {
+            return { items: [], totalCount: 0 }
+        },
     },
     selectors: {
         selectBasketItems: (state: IBasket) => state.items,

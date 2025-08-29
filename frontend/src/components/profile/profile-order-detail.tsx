@@ -9,6 +9,7 @@ import { useDispatch, useSelector } from '../../services/hooks'
 import { selectOrderByNumber } from '../../services/selector'
 import { getCurrentUserOrderByNumber } from '../../services/slice/profile-orders/thunk'
 import { adapterOrderFromServer } from '../../utils/adapterOrderFromServer'
+import { SafeHtml } from '../../utils/safeHtml'
 import { Preloader } from '../preloader'
 import styles from './profile.module.scss'
 
@@ -71,11 +72,7 @@ export default function ProfileOrderDetail() {
                 render: (dataInfo: OrderData) => (
                     <>
                         {dataInfo.comment ? (
-                            <div
-                                dangerouslySetInnerHTML={{
-                                    __html: dataInfo.comment,
-                                }}
-                            />
+                            <SafeHtml html={dataInfo.comment} />
                         ) : (
                             'Комментариев нет'
                         )}
