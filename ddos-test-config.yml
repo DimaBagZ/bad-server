@@ -1,5 +1,5 @@
 config:
-  target: "http://localhost"
+  target: "{{ $processEnvironment.TEST_TARGET || 'http://localhost' }}"
   phases:
     - duration: 30
       arrivalRate: 2000
