@@ -100,6 +100,22 @@ export const getOrders = async (
             { $unwind: '$products' },
         ]
 
+        // Проверка на избыточную агрегацию (защита от инъекций)
+        if (aggregatePipeline.length > 8) {
+            return res.status(400).json({ error: 'Aggregation too complex' })
+        }
+
+        // Дополнительная проверка на сложные операторы
+        const pipelineString = JSON.stringify(aggregatePipeline)
+        if (
+            pipelineString.includes('$where') ||
+            pipelineString.includes('$eval')
+        ) {
+            return res
+                .status(400)
+                .json({ error: 'Dangerous aggregation operators detected' })
+        }
+
         if (search) {
             // Экранируем строку поиска, чтобы избежать ошибок regexp и ReDoS
             const safe = escapeRegExp(String(search))

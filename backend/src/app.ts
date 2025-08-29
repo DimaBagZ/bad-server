@@ -37,8 +37,10 @@ app.use(cookieParser())
 // Явно настраиваем CORS с параметрами, чтобы политика была не пустой
 // (ожидается тестами и необходима для корректной работы cookie/кредитеншиалов)
 const corsOptions = {
-    origin: (process.env.ORIGIN_ALLOW || 'http://localhost').split(','),
+    origin: ['http://localhost:5173', 'http://localhost:3000'],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
 }
 app.use(cors(corsOptions))
 

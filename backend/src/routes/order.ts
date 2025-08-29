@@ -15,7 +15,7 @@ import { validateCSRFToken } from '../middlewares/csrf'
 
 const orderRouter = Router()
 
-orderRouter.post('/', auth, validateCSRFToken, validateOrderBody, createOrder)
+orderRouter.post('/', auth, validateOrderBody, validateCSRFToken, createOrder)
 // Доступ к базе всех заказов ограничен ролью admin
 orderRouter.get('/all', auth, roleGuardMiddleware(Role.Admin), getOrders)
 orderRouter.get('/all/me', auth, getOrdersCurrentUser)

@@ -20,7 +20,10 @@ export const uploadFile = async (
 
         // Проверяем, что загруженный файл действительно изображение, читая метаданные
         const absolutePath = process.env.UPLOAD_PATH_TEMP
-            ? join(__dirname, `../public/${process.env.UPLOAD_PATH_TEMP}/${req.file.filename}`)
+            ? join(
+                  __dirname,
+                  `../public/${process.env.UPLOAD_PATH_TEMP}/${req.file.filename}`
+              )
             : join(__dirname, `../public/${req.file.filename}`)
 
         try {
@@ -34,7 +37,6 @@ export const uploadFile = async (
             : `/${req.file?.filename}`
         return res.status(constants.HTTP_STATUS_CREATED).send({
             fileName,
-            originalName: req.file?.originalname,
         })
     } catch (error) {
         return next(error)
