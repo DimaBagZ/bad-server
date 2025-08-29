@@ -59,7 +59,10 @@ export default function AdminNewProduct() {
         const dataProduct = {
             ...values,
             category: selectedCategory?.title as keyof typeof CATEGORY_CLASSES,
-            image: selectedFile,
+            image: {
+                fileName: selectedFile.fileName,
+                originalName: selectedFile.originalName,
+            },
             price: values.price ? values.price : null,
         }
         await createProduct(dataProduct)

@@ -7,6 +7,7 @@ import ConflictError from '../errors/conflict-error'
 import NotFoundError from '../errors/not-found-error'
 import Product from '../models/product'
 import movingFile from '../utils/movingFile'
+import { UPLOAD_CONFIG } from '../config'
 
 // GET /product
 const getProducts = async (req: Request, res: Response, next: NextFunction) => {
@@ -56,11 +57,11 @@ const createProduct = async (
         const { description, category, price, title, image } = req.body
 
         // Переносим картинку из временной папки
-        if (image) {
+        if (image && image.fileName) {
             movingFile(
                 image.fileName,
-                join(__dirname, `../public/${process.env.UPLOAD_PATH_TEMP}`),
-                join(__dirname, `../public/${process.env.UPLOAD_PATH}`)
+                join(__dirname, `../public/${UPLOAD_CONFIG.tempPath}`),
+                join(__dirname, `../public/${UPLOAD_CONFIG.path}`)
             )
         }
 
@@ -97,11 +98,11 @@ const updateProduct = async (
         const { image } = req.body
 
         // Переносим картинку из временной папки
-        if (image) {
+        if (image && image.fileName) {
             movingFile(
                 image.fileName,
-                join(__dirname, `../public/${process.env.UPLOAD_PATH_TEMP}`),
-                join(__dirname, `../public/${process.env.UPLOAD_PATH}`)
+                join(__dirname, `../public/${UPLOAD_CONFIG.tempPath}`),
+                join(__dirname, `../public/${UPLOAD_CONFIG.path}`)
             )
         }
 

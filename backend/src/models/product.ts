@@ -29,7 +29,13 @@ const cardsSchema = new mongoose.Schema<IProduct>(
                 type: String,
                 required: [true, 'Поле "image.fileName" должно быть заполнено'],
             },
-            originalName: String,
+            originalName: {
+                type: String,
+                required: [
+                    true,
+                    'Поле "image.originalName" должно быть заполнено',
+                ],
+            },
         },
         category: {
             type: String,
@@ -53,7 +59,12 @@ cardsSchema.pre('findOneAndUpdate', async function deleteOldImage() {
     // @ts-expect-error - Mongoose types don't properly type this.getUpdate()
     const updateImage = this.getUpdate().$set?.image
     const docToUpdate = await this.model.findOne(this.getQuery())
-    if (updateImage && docToUpdate) {
+    if (
+        updateImage &&
+        docToUpdate &&
+        docToUpdate.image &&
+        docToUpdate.image.fileName
+    ) {
         unlink(
             join(__dirname, `../public/${docToUpdate.image.fileName}`),
             (err) => console.log(err)
@@ -63,9 +74,11 @@ cardsSchema.pre('findOneAndUpdate', async function deleteOldImage() {
 
 // Можно лучше: удалять файл с изображением после удаление сущности
 cardsSchema.post('findOneAndDelete', async (doc: IProduct) => {
-    unlink(join(__dirname, `../public/${doc.image.fileName}`), (err) =>
-        console.log(err)
-    )
+    if (doc.image && doc.image.fileName) {
+        unlink(join(__dirname, `../public/${doc.image.fileName}`), (err) =>
+            console.log(err)
+        )
+    }
 })
 
 const ProductModel = mongoose.model<IProduct>('products', cardsSchema)

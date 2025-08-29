@@ -5,7 +5,8 @@ import 'dotenv/config'
 import express, { json, urlencoded } from 'express'
 import mongoose from 'mongoose'
 import path from 'path'
-import { DB_ADDRESS } from './config'
+import fs from 'fs'
+import { DB_ADDRESS, UPLOAD_CONFIG } from './config'
 import errorHandler from './middlewares/error-handler'
 import serveStatic from './middlewares/serverStatic'
 import routes from './routes'
@@ -64,6 +65,20 @@ app.use(errorHandler)
 
 const bootstrap = async () => {
     try {
+        // Создаем директории для загрузки файлов
+        const uploadDir = path.join(__dirname, 'public', UPLOAD_CONFIG.path)
+        const tempDir = path.join(__dirname, 'public', UPLOAD_CONFIG.tempPath)
+
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true })
+            console.log('Created upload directory:', uploadDir)
+        }
+
+        if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir, { recursive: true })
+            console.log('Created temp directory:', tempDir)
+        }
+
         console.log('Connecting to database:', DB_ADDRESS)
         await mongoose.connect(DB_ADDRESS)
         console.log('Connected to database successfully')
