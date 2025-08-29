@@ -3,6 +3,7 @@ import { constants } from 'http2'
 import sharp from 'sharp'
 import { join } from 'path'
 import BadRequestError from '../errors/bad-request-error'
+import { UPLOAD_CONFIG } from '../config'
 
 export const uploadFile = async (
     req: Request,
@@ -14,17 +15,20 @@ export const uploadFile = async (
     }
     try {
         // Минимальный размер файла (2KB)
-        if (req.file.size < 2 * 1024) {
+        if (req.file.size < UPLOAD_CONFIG.minFileSize) {
             return next(new BadRequestError('Файл слишком маленький'))
         }
 
+        // Максимальный размер файла (10MB)
+        if (req.file.size > UPLOAD_CONFIG.maxFileSize) {
+            return next(new BadRequestError('Файл слишком большой'))
+        }
+
         // Проверяем, что загруженный файл действительно изображение, читая метаданные
-        const absolutePath = process.env.UPLOAD_PATH_TEMP
-            ? join(
-                  __dirname,
-                  `../public/${process.env.UPLOAD_PATH_TEMP}/${req.file.filename}`
-              )
-            : join(__dirname, `../public/${req.file.filename}`)
+        const absolutePath = join(
+            __dirname,
+            `../public/${UPLOAD_CONFIG.tempPath}/${req.file.filename}`
+        )
 
         try {
             await sharp(absolutePath).metadata()
@@ -34,9 +38,7 @@ export const uploadFile = async (
             return next(new BadRequestError('Некорректный файл изображения'))
         }
 
-        const fileName = process.env.UPLOAD_PATH
-            ? `/${process.env.UPLOAD_PATH}/${req.file.filename}`
-            : `/${req.file?.filename}`
+        const fileName = `/${UPLOAD_CONFIG.path}/${req.file.filename}`
         return res.status(constants.HTTP_STATUS_CREATED).send({
             fileName,
         })

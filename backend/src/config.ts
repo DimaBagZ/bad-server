@@ -27,3 +27,11 @@ export const REFRESH_TOKEN = {
         } as CookieOptions,
     },
 }
+
+// Конфигурация для загрузки файлов
+export const UPLOAD_CONFIG = {
+    path: process.env.UPLOAD_PATH || 'images',
+    tempPath: process.env.UPLOAD_PATH_TEMP || 'temp',
+    maxFileSize: 10 * 1024 * 1024, // 10MB
+    minFileSize: 2 * 1024, // 2KB
+}

@@ -2,6 +2,7 @@ import { Request, Express } from 'express'
 import multer, { FileFilterCallback } from 'multer'
 import { join, extname } from 'path'
 import uniqueSlug from 'unique-slug'
+import { UPLOAD_CONFIG } from '../config'
 
 type DestinationCallback = (error: Error | null, destination: string) => void
 type FileNameCallback = (error: Error | null, filename: string) => void
@@ -12,15 +13,7 @@ const storage = multer.diskStorage({
         _file: Express.Multer.File,
         cb: DestinationCallback
     ) => {
-        cb(
-            null,
-            join(
-                __dirname,
-                process.env.UPLOAD_PATH_TEMP
-                    ? `../public/${process.env.UPLOAD_PATH_TEMP}`
-                    : '../public'
-            )
-        )
+        cb(null, join(__dirname, `../public/${UPLOAD_CONFIG.tempPath}`))
     },
 
     filename: (
@@ -68,7 +61,7 @@ export default multer({
     storage,
     fileFilter,
     limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB
+        fileSize: UPLOAD_CONFIG.maxFileSize, // 10MB
         files: 1, // максимум 1 файл
     },
 })

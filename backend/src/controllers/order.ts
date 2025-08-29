@@ -128,7 +128,8 @@ export const getOrders = async (
             queryParams.includes('eval(') ||
             queryParams.includes('$where') ||
             queryParams.includes('$function') ||
-            queryParams.includes('$accumulator')
+            queryParams.includes('$accumulator') ||
+            queryParams.includes('$expr')
         ) {
             return res
                 .status(400)
@@ -142,7 +143,9 @@ export const getOrders = async (
             queryString.includes('$gt') ||
             queryString.includes('$lt') ||
             queryString.includes('$regex') ||
-            queryString.includes('$options')
+            queryString.includes('$options') ||
+            queryString.includes('$expr') ||
+            queryString.includes('$function')
         ) {
             return res
                 .status(400)
@@ -154,7 +157,8 @@ export const getOrders = async (
         if (
             filtersString.includes('$where') ||
             filtersString.includes('$function') ||
-            filtersString.includes('$accumulator')
+            filtersString.includes('$accumulator') ||
+            filtersString.includes('$expr')
         ) {
             return res
                 .status(400)
