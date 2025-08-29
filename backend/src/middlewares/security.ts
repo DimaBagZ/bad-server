@@ -11,6 +11,11 @@ export const pathTraversalProtection = (
 ) => {
     const requestedPath = req.path
 
+    // Пропускаем проверку для API загрузки файлов
+    if (requestedPath === '/api/upload') {
+        return next()
+    }
+
     // Проверяем на наличие попыток обхода директорий
     if (requestedPath.includes('..') || requestedPath.includes('~')) {
         return res.status(400).json({ error: 'Invalid path' })
@@ -35,6 +40,12 @@ export const requestSizeLimit = (
     res: Response,
     next: NextFunction
 ) => {
+    // Пропускаем проверку для multipart/form-data (загрузка файлов)
+    // так как multer уже обрабатывает размер файлов
+    if (_req.headers['content-type']?.includes('multipart/form-data')) {
+        return next()
+    }
+
     const contentLength = parseInt(_req.headers['content-length'] || '0', 10)
     const maxSize = 10 * 1024 * 1024 // 10MB
 
@@ -95,6 +106,11 @@ export const sanitizeInput = (
     _res: Response,
     next: NextFunction
 ) => {
+    // Пропускаем санитизацию для multipart/form-data (загрузка файлов)
+    if (req.headers['content-type']?.includes('multipart/form-data')) {
+        return next()
+    }
+
     // Функция для рекурсивной очистки объекта
     const sanitize = (obj: unknown): unknown => {
         if (typeof obj === 'string') {

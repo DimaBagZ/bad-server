@@ -109,11 +109,25 @@ export const getOrders = async (
         const pipelineString = JSON.stringify(aggregatePipeline)
         if (
             pipelineString.includes('$where') ||
-            pipelineString.includes('$eval')
+            pipelineString.includes('$eval') ||
+            pipelineString.includes('$function') ||
+            pipelineString.includes('$accumulator')
         ) {
             return res
                 .status(400)
                 .json({ error: 'Dangerous aggregation operators detected' })
+        }
+
+        // Проверка на попытки инъекции через параметры запроса
+        const queryParams = Object.values(req.query).join(' ')
+        if (
+            queryParams.includes('$') ||
+            queryParams.includes('{') ||
+            queryParams.includes('}') ||
+            queryParams.includes('javascript:') ||
+            queryParams.includes('eval(')
+        ) {
+            return res.status(400).json({ error: 'Suspicious query parameters detected' })
         }
 
         if (search) {

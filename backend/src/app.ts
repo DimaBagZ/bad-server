@@ -37,11 +37,14 @@ app.use(cookieParser())
 // Явно настраиваем CORS с параметрами, чтобы политика была не пустой
 // (ожидается тестами и необходима для корректной работы cookie/кредитеншиалов)
 const corsOptions = {
-    origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    origin: function (
+        origin: string | undefined,
+        callback: (err: Error | null, allow?: boolean) => void
+    ) {
         // Разрешаем запросы без Origin (от тестов)
         if (!origin) return callback(null, true)
         
-        const allowedOrigins = ['http://localhost:5173', 'http://localhost:3000']
+        const allowedOrigins = ['http://localhost:5173']
         if (allowedOrigins.includes(origin)) {
             callback(null, true)
         } else {
