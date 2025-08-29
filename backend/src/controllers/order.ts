@@ -101,7 +101,7 @@ export const getOrders = async (
         ]
 
         // Проверка на избыточную агрегацию (защита от инъекции)
-        if (aggregatePipeline.length > 8) {
+        if (aggregatePipeline.length > 5) {
             return res.status(400).json({ error: 'Aggregation too complex' })
         }
 

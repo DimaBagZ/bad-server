@@ -28,7 +28,9 @@ export const uploadFile = async (
 
         try {
             await sharp(absolutePath).metadata()
-        } catch (_e) {
+        } catch (error) {
+            // Логируем ошибку для отладки
+            console.error('Sharp validation error:', error)
             return next(new BadRequestError('Некорректный файл изображения'))
         }
 
